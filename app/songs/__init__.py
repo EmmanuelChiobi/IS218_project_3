@@ -1,8 +1,9 @@
 import csv
 import logging
 import os
+import json
 
-from flask import Blueprint, render_template, abort, url_for,current_app
+from flask import Blueprint, render_template, abort, url_for, current_app, jsonify, Response
 from flask_login import current_user, login_required
 from jinja2 import TemplateNotFound
 
@@ -26,12 +27,20 @@ def songs_browse(page):
     except TemplateNotFound:
         abort(404)
 
+@songs.route('/songs_datatables/', methods=['GET'])
+def datatable_location_browse():
+    song_data = Song.query.all()
+    try:
+        return render_template('browse_songs_datatables.html', data = song_data)
+    except TemplateNotFound:
+        abort(404)
+
 @songs.route('/songs/upload', methods=['POST', 'GET'])
 @login_required
 def songs_upload():
     form = csv_upload()
     if form.validate_on_submit():
-        log = logging.getLogger("myApp")
+        # log = logging.getLogger("myApp")
 
         filename = secure_filename(form.file.data.filename)
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
@@ -41,7 +50,13 @@ def songs_upload():
         with open(filepath) as file:
             csv_file = csv.DictReader(file)
             for row in csv_file:
-                list_of_songs.append(Song(row['Name'],row['Artist'],row['Genre']))
+                song = Song.query.filter_by(title=row['Name']).first()
+                if song is None:
+                    current_user.songs.append(Song(row['Name'],row['Artist'],row['Year'],row['Genre']))
+                    db.session.commit()
+                else:
+                    current_user.songs.append(song)
+                    db.session.commit()
 
         current_user.songs = list_of_songs
         db.session.commit()
