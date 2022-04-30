@@ -32,7 +32,7 @@ def add_user(application):
     """This adds the user"""
     with application.app_context():
         #new record
-        user = User('bobgale@gmail.com', 'besttest', 0)
+        user = User('keith@webizly.com', 'testtest', True)
         db.session.add(user)
         db.session.commit()
 
