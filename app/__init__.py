@@ -1,4 +1,8 @@
 """A simple flask web app"""
+import logging
+import os
+from logging.handlers import RotatingFileHandler
+
 import flask_login
 from flask import Flask, render_template
 from flask_bootstrap import Bootstrap5
@@ -10,6 +14,8 @@ from app.context_processors import utility_text_processors
 from app.simple_pages import simple_pages
 from app.auth import auth
 from app.exceptions import http_exceptions
+from app.logging_config import log_con, LOGGING_CONFIG
+from app.error_handlers import error_handlers
 from app.db.models import User
 from app.db import db
 from app.auth import auth
@@ -26,6 +32,12 @@ def page_not_found(e):
 def create_app():
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__)
+    if app.config["ENV"] == "production":
+        app.config.from_object("app.config.ProductionConfig")
+    if app.config["ENV"] == "development":
+        app.config.from_object("app.config.DevelopmentConfig")
+    if app.config["ENV"] == "testing":
+        app.config.from_object("app.config.TestingConfig")
     app.secret_key = 'This is an INSECURE secret!! DO NOT use this in production!!'
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
@@ -33,6 +45,8 @@ def create_app():
     bootstrap = Bootstrap5(app)
     app.register_blueprint(simple_pages)
     app.register_blueprint(auth)
+    app.register_blueprint(log_con)
+    app.register_blueprint(error_handlers)
     app.context_processor(utility_text_processors)
     app.config['BOOTSTRAP_BOOTSWATCH_THEME'] = 'Simplex'
     app.register_error_handler(404, page_not_found)
