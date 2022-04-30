@@ -41,10 +41,16 @@ def songs_upload():
         with open(filepath) as file:
             csv_file = csv.DictReader(file)
             for row in csv_file:
-                list_of_songs.append(Song(row['Name'],row['Artist'],row['Genre']))
+                song = Song.query.filter_by(title=row['Name']).first()
+                if song is None:
+                    current_user.songs.append(Song(row['Name'],row['Artist'],row['Year'],row['Genre']))
+                    db.session.commit()
+                else:
+                    current_user.songs.append(song)
+                    db.session.commit()
 
-        current_user.songs = list_of_songs
-        db.session.commit()
+        # current_user.songs = list_of_songs
+        # db.session.commit()
 
         return redirect(url_for('songs.songs_browse'))
 
